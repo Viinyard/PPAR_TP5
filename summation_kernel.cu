@@ -13,7 +13,7 @@ __global__ void reduce(float data_size, float * data_out, float * data_block) {
 	extern __shared__ float sdata[];
 	
 	unsigned int tid = threadIdx.x;
-	unsigned int i = blockIdx.x * blockDim.x * threadIdx.x;
+	unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
 	
 	sdata[tid] = (i < data_size) ? data_out[i] : 0;
 	__syncthreads();
@@ -28,5 +28,7 @@ __global__ void reduce(float data_size, float * data_out, float * data_block) {
 	}
 
 	if(tid == 0) data_block[blockIdx.x] = sdata[0];
+
 }
+
 

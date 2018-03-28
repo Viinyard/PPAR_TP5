@@ -28,7 +28,7 @@ int main(int argc, char ** argv)
     
     // Parameter definition
     int threads_per_block = 4 * 32;
-    int blocks_in_grid = 524288;
+    int blocks_in_grid = data_size / threads_per_block;
 
     
     int num_threads = threads_per_block * blocks_in_grid;
@@ -41,31 +41,39 @@ int main(int argc, char ** argv)
     int results_size = num_threads;
     float * data_out_cpu;
     // Allocating output data on CPU
-	data_out_cpu = (float*) calloc(results_size,  sizeof(float));
+	data_out_cpu = (float*) calloc(blocks_in_grid,  sizeof(float));
 	// Allocating output data on GPU
     	float * data_out_gpu;
 	cudaMalloc((void **) &data_out_gpu, results_size * sizeof(float));
-//	float *data_block;
-//	cudaMalloc((void **) &data_block, blocks_in_grid * sizeof(float));
+
+
+	float *data_block;
+	cudaMalloc((void **) &data_block, blocks_in_grid * sizeof(float));
+
+
     // Start timer
     CUDA_SAFE_CALL(cudaEventRecord(start, 0));
 
     // Execute kernel
 	summation_kernel<<<blocks_in_grid, threads_per_block>>>(data_size, data_out_gpu);	
-//	int smemSize = threads_per_block * sizeof(float);
-	//reduce<<<blocks_in_grid, threads_per_block, smemSize>>>(data_size, data_out_gpu, data_block);
+
+
+	int smemSize = threads_per_block * sizeof(float);
+	reduce<<<blocks_in_grid, threads_per_block, smemSize>>>(data_size, data_out_gpu, data_block);
+
+
 // Stop timer
     CUDA_SAFE_CALL(cudaEventRecord(stop, 0));
     CUDA_SAFE_CALL(cudaEventSynchronize(stop));
 
     // Get results back
     // TODO
-    cudaMemcpy(data_out_cpu, data_out_gpu, results_size * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(data_out_cpu, data_block, blocks_in_grid * sizeof(float), cudaMemcpyDeviceToHost);
     // Finish reduction
     // TODO
 	float sum = 0.;
-	for(int i = 0; i < results_size; i++) {
-	//	printf("%d>%f\n", i, data_out_cpu[i]);
+	for(int i = 0; i < blocks_in_grid; i++) {
+		//printf("%d>%f\n", i, data_out_cpu[i]);
 		sum += data_out_cpu[i];
 	}
     // Cleanup
