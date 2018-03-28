@@ -18,17 +18,12 @@ __global__ void reduce(float data_size, float * data_out, float * data_block) {
 	sdata[tid] = (i < data_size) ? data_out[i] : 0;
 	__syncthreads();
 
-	for(unsigned int s = 1; s < blockDim.x; s *= 2) {
-		int index = 2 * s * tid;
-
-		if(index < blockDim.x) {
-			sdata[index] += sdata[index + s];
+	for(unsigned int s = blockDim.x/2; s > 0; s >>= 1) {
+		if(tid < s) {
+			sdata[tid] += sdata[tid + s];
 		}
 		__syncthreads();
-	}
+	}	
 
 	if(tid == 0) data_block[blockIdx.x] = sdata[0];
-
 }
-
-
