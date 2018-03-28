@@ -3,7 +3,7 @@
 __global__ void summation_kernel(int data_size, float * data_out)
 {
 	int i = blockDim.x * blockIdx.x + threadIdx.x;
-	//data_out[i] += ((i % 2 == 0) ? 1 : - 1) / (i + 1.0f);
+	data_out[i] += ((i % 2 == 0) ? 1 : - 1) / (i + 1.0f);
 	/*for(int cpt = i; cpt < i + data_size; cpt++) {
 		data_out[cpt] += 1.0f;
 	}*/
