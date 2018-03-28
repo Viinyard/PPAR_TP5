@@ -30,7 +30,7 @@ int main(int argc, char ** argv)
     int threads_per_block = 4 * 32;
     int blocks_in_grid = data_size / threads_per_block;
 
-    
+	printf("blocks in grid before start = %d\n", blocks_in_grid);    
     int num_threads = threads_per_block * blocks_in_grid;
 
     // Timer initialization
@@ -59,8 +59,16 @@ int main(int argc, char ** argv)
 
 
 	int smemSize = threads_per_block * sizeof(float);
-	reduce<<<blocks_in_grid, threads_per_block, smemSize>>>(data_size, data_out_gpu, data_block);
-
+	
+	while( 1) {
+	
+		reduce<<<blocks_in_grid, threads_per_block, smemSize>>>(data_size, data_out_gpu, data_block);
+		data_out_gpu = data_block;
+		if(blocks_in_grid == 1) break;
+		if(blocks_in_grid < threads_per_block) threads_per_block = blocks_in_grid;
+		blocks_in_grid /= (blocks_in_grid >= threads_per_block) ? threads_per_block : blocks_in_grid;
+		printf("BLOCKS IN GRID = %d\n", blocks_in_grid);
+	}
 
 // Stop timer
     CUDA_SAFE_CALL(cudaEventRecord(stop, 0));
@@ -68,12 +76,12 @@ int main(int argc, char ** argv)
 
     // Get results back
     // TODO
-    cudaMemcpy(data_out_cpu, data_block, blocks_in_grid * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(data_out_cpu, data_block, blocks_in_grid *  sizeof(float), cudaMemcpyDeviceToHost);
     // Finish reduction
     // TODO
 	float sum = 0.;
-	for(int i = 0; i < blocks_in_grid; i++) {
-		//printf("%d>%f\n", i, data_out_cpu[i]);
+	for(int i = 0; i < blocks_in_grid  ; i++) {
+		printf("%d>%f\n", i, data_out_cpu[i]);
 		sum += data_out_cpu[i];
 	}
     // Cleanup
